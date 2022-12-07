@@ -10,6 +10,9 @@
 .svn/
 migrate_working_dir/
 
+# Visual Studio Code related
+.vscode/
+
 # IntelliJ related
 *.iml
 *.ipr
