@@ -38,7 +38,7 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // Navigator.pushNamed(context, '/play');
+                  Navigator.pushNamed(context, '/settings');
                 },
                 icon: const Icon(Icons.settings),
                 label: const Text('Settings'),

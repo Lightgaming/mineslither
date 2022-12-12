@@ -1,16 +1,21 @@
 import 'dart:async';
-import 'dart:html';
+import 'dart:developer';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mineslither/utils/pixel.dart';
 import 'package:mineslither/widgets/app_bar.dart';
-import 'package:mineslither/widgets/bord_square.dart';
 import 'package:mineslither/widgets/closed_pixel.dart';
 import 'package:mineslither/widgets/food_pixel.dart';
 import 'package:mineslither/widgets/open_pixel.dart';
 import 'package:mineslither/widgets/snake_pixel.dart';
 
 enum Direction { up, down, left, right }
+
+const width = 32;
+const height = 24;
+const int bombProbability = 4;
+const int maxProbability = 15;
 
 class GameScreen extends StatefulWidget {
   const GameScreen({super.key});
@@ -20,37 +25,29 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  // final Game game = Game(width: 32, height: 24);
-  static const width = 32;
-  static const height = 24;
-
-  static const int bombProbability = 3;
-  static const int maxProbability = 15;
-
   Timer? gameTimer;
-
-  int bombCount = 0;
-
-  List<int> snakePos = [
-    (268 + width * 4),
-    (268 + width * 4) + 1,
-    (268 + width * 4) + 2,
-    (268 + width * 4) + 3
-  ];
-
-  List<List<BoardSquare>> board = [];
-
-  List<int> foodPos = [];
-
   Direction lastDirection = Direction.right;
+  int bombCount = 0;
+  int foodCount = 0;
+
+  Snake snake = Snake(
+    body: [],
+    direction: Direction.right,
+    length: 0,
+    score: 0,
+    isDead: false,
+  );
+
+  List<List<Pixel>> board = [];
 
   // init the game
   @override
   void initState() {
     super.initState();
-    document.onContextMenu.listen((event) => event.preventDefault());
+    // document.onContextMenu.listen((event) => event.preventDefault());
     // game.init();
     _initialiseGame();
+    inspect(snake);
     gameTimer?.cancel();
     gameTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
       gameLoop();
@@ -65,10 +62,28 @@ class _GameScreenState extends State<GameScreen> {
 
   // Initialises all lists
   void _initialiseGame() {
+    debugPrint('Initialising game...');
     // Initialise all squares to having no bombs
     board = List.generate(height, (i) {
       return List.generate(width, (j) {
-        return BoardSquare();
+        if (i == 12 && (j == 13 || j == 14 || j == 15)) {
+          snake.body.add(Pixel(
+            rowNumber: i,
+            columnNumber: j,
+            bombsAround: 0,
+            hasBomb: false,
+            isRevealed: true,
+            isFood: false,
+          ));
+        }
+        return Pixel(
+          rowNumber: i,
+          columnNumber: j,
+          bombsAround: 0,
+          hasBomb: false,
+          isRevealed: false,
+          isFood: false,
+        );
       });
     });
 
@@ -89,13 +104,16 @@ class _GameScreenState extends State<GameScreen> {
       for (int j = 0; j < width; j++) {
         if (i >= 9 && i <= 15 && j >= 10 && j <= 20) {
           board[i][j].isRevealed = true;
-          board[i][j].hasBomb = false;
+
+          if (board[i][j].hasBomb) {
+            board[i][j].hasBomb = false;
+            bombCount--;
+          }
         }
       }
     }
 
     calculateBombs();
-    setState(() {});
   }
 
   void calculateBombs() {
@@ -141,7 +159,9 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void gameOver(String reason) {
+    // Stop timer
     gameTimer?.cancel();
+
     showDialog(
       context: context,
       builder: (context) {
@@ -152,9 +172,26 @@ class _GameScreenState extends State<GameScreen> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
+                gameTimer =
+                    Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+                  gameLoop();
+                });
+              },
+              child: const Text('continue'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  for (var i = 0; i < board.length; i++) {
+                    for (var j = 0; j < board[i].length; j++) {
+                      board[i][j].isRevealed = true;
+                    }
+                  }
+                });
+
                 Navigator.of(context).pop();
               },
-              child: const Text('OK'),
+              child: const Text('close'),
             ),
           ],
         );
@@ -187,12 +224,14 @@ class _GameScreenState extends State<GameScreen> {
   void gameLoop() {
     setState(() {
       // add snake head to the and of the list
-      int rowNumber = (snakePos.last / width).floor();
-      int columnNumber = (snakePos.last % width);
+      int rowNumber = snake.body.last.rowNumber;
+      int columnNumber = snake.body.last.columnNumber;
       switch (lastDirection) {
         case Direction.up:
           // if the snake eats itself, game over
-          if (snakePos.any((element) => element == snakePos.last - width)) {
+          if (snake.body.any((element) =>
+              element.rowNumber == rowNumber - 1 &&
+              element.columnNumber == columnNumber)) {
             gameTimer?.cancel();
             gameOver('You ate yourself!');
             break;
@@ -203,11 +242,20 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snakePos.add(snakePos.last - width);
+          snake.body.add(Pixel(
+            rowNumber: rowNumber - 1,
+            columnNumber: columnNumber,
+            bombsAround: 0,
+            hasBomb: false,
+            isRevealed: true,
+            isFood: false,
+          ));
           break;
         case Direction.left:
           // if the snake eats itself, game over
-          if (snakePos.any((element) => element == snakePos.last - 1)) {
+          if (snake.body.any((element) =>
+              element.columnNumber == columnNumber - 1 &&
+              element.rowNumber == rowNumber)) {
             gameTimer?.cancel();
             gameOver('You ate yourself!');
             break;
@@ -217,12 +265,21 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snakePos.add(snakePos.last - 1);
+          snake.body.add(Pixel(
+            rowNumber: rowNumber,
+            columnNumber: columnNumber - 1,
+            bombsAround: 0,
+            hasBomb: false,
+            isRevealed: true,
+            isFood: false,
+          ));
           break;
 
         case Direction.right:
           // if the snake eats itself, game over
-          if (snakePos.any((element) => element == snakePos.last + 1)) {
+          if (snake.body.any((element) =>
+              element.columnNumber == columnNumber + 1 &&
+              element.rowNumber == rowNumber)) {
             gameTimer?.cancel();
             gameOver('You ate yourself!');
             break;
@@ -232,12 +289,21 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snakePos.add(snakePos.last + 1);
+          snake.body.add(Pixel(
+            rowNumber: rowNumber,
+            columnNumber: columnNumber + 1,
+            bombsAround: 0,
+            hasBomb: false,
+            isRevealed: true,
+            isFood: false,
+          ));
           break;
 
         case Direction.down:
           // if the snake eats itself, game over
-          if (snakePos.any((element) => element == snakePos.last + width)) {
+          if (snake.body.any((element) =>
+              element.rowNumber == rowNumber + 1 &&
+              element.columnNumber == columnNumber)) {
             gameTimer?.cancel();
             gameOver('You ate yourself!');
             break;
@@ -247,20 +313,31 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snakePos.add(snakePos.last + width);
+          snake.body.add(Pixel(
+            rowNumber: rowNumber + 1,
+            columnNumber: columnNumber,
+            bombsAround: 0,
+            hasBomb: false,
+            isRevealed: true,
+            isFood: false,
+          ));
           break;
         default:
           break;
       }
 
       // remove snake head
-      if (!foodPos.any((element) => element == snakePos.last)) {
-        snakePos.removeAt(0);
+      if (!board[rowNumber][columnNumber].isFood) {
+        snake.body.removeAt(0);
       } else {
-        foodPos.remove(snakePos.last);
-        if (foodPos.isEmpty && bombCount == 0) {
-          winGame();
-        }
+        board[rowNumber][columnNumber].isFood = false;
+        foodCount--;
+      }
+
+      debugPrint('BombCount: $bombCount | FoodCount: $foodCount');
+
+      if (bombCount == 0 && foodCount == 0) {
+        winGame();
       }
     });
   }
@@ -292,6 +369,7 @@ class _GameScreenState extends State<GameScreen> {
         // Remove bomb
         board[rowNumber][columnNumber].hasBomb = false;
         bombCount--;
+        foodCount++;
         // recalculate numbers
         for (var x = -1; x <= 1; x++) {
           for (var i = -1; i <= 1; i++) {
@@ -312,7 +390,14 @@ class _GameScreenState extends State<GameScreen> {
             board[i][j].bombsAround = 0;
           }
         }
-        foodPos.add(rowNumber * width + columnNumber);
+        board[rowNumber][columnNumber] = Pixel(
+          rowNumber: rowNumber,
+          columnNumber: columnNumber,
+          bombsAround: 0,
+          hasBomb: false,
+          isRevealed: true,
+          isFood: true,
+        );
         calculateBombs();
       } else {
         // game over
@@ -353,16 +438,24 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       if (value.isKeyPressed(LogicalKeyboardKey.arrowDown) ||
           value.isKeyPressed(LogicalKeyboardKey.keyS)) {
-        lastDirection = Direction.down;
+        if (lastDirection != Direction.up) {
+          lastDirection = Direction.down;
+        }
       } else if (value.isKeyPressed(LogicalKeyboardKey.arrowUp) ||
           value.isKeyPressed(LogicalKeyboardKey.keyW)) {
-        lastDirection = Direction.up;
+        if (lastDirection != Direction.down) {
+          lastDirection = Direction.up;
+        }
       } else if (value.isKeyPressed(LogicalKeyboardKey.arrowLeft) ||
           value.isKeyPressed(LogicalKeyboardKey.keyA)) {
-        lastDirection = Direction.left;
+        if (lastDirection != Direction.right) {
+          lastDirection = Direction.left;
+        }
       } else if (value.isKeyPressed(LogicalKeyboardKey.arrowRight) ||
           value.isKeyPressed(LogicalKeyboardKey.keyD)) {
-        lastDirection = Direction.right;
+        if (lastDirection != Direction.left) {
+          lastDirection = Direction.right;
+        }
       }
     });
   }
@@ -386,37 +479,73 @@ class _GameScreenState extends State<GameScreen> {
                 child: AspectRatio(
                   aspectRatio: 32 / 24,
                   child: GridView.builder(
-                    itemCount: 768,
+                    itemCount: height * width,
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 32,
                     ),
                     itemBuilder: (context, index) {
-                      // return Text(index.toString());
                       int rowNumber = (index / width).floor();
                       int columnNumber = (index % width);
-                      if (snakePos.contains(index)) {
-                        if (index == snakePos.last) {
+
+                      // snake state
+                      if (snake.body.any((element) =>
+                          element.columnNumber == columnNumber &&
+                          element.rowNumber == rowNumber)) {
+                        if (snake.body.last.rowNumber == rowNumber &&
+                            snake.body.last.columnNumber == columnNumber) {
                           return const SnakePixel(head: true);
                         }
                         return const SnakePixel();
-                      } else if (foodPos.contains(index)) {
+                      }
+
+                      // food state
+                      if (board[rowNumber][columnNumber].isFood) {
                         return const FoodPixel();
-                      } else if (board[rowNumber][columnNumber].isRevealed) {
+                      }
+
+                      // open pixel
+                      if (board[rowNumber][columnNumber].isRevealed) {
                         return OpenPixel(
                           number: board[rowNumber][columnNumber].bombsAround,
-                        );
-                      } else {
-                        return ClosedPixel(
-                          onLeftClick: () {
-                            handlePixelLeftClick(rowNumber, columnNumber);
-                          },
-                          onRightClick: () {
-                            handlePixelRightClick(rowNumber, columnNumber);
-                          },
+                          isBomb: board[rowNumber][columnNumber].hasBomb,
+                          isRevealed: board[rowNumber][columnNumber].isRevealed,
                         );
                       }
+
+                      // closed pixel
+                      return ClosedPixel(
+                        onLeftClick: () {
+                          handlePixelLeftClick(rowNumber, columnNumber);
+                        },
+                        onRightClick: () {
+                          handlePixelRightClick(rowNumber, columnNumber);
+                        },
+                      );
+                      // if (snake.body.any((element) => element.)) {
+                      //   if (index == snake.body.last) {
+                      //     return const SnakePixel(head: true);
+                      //   }
+                      //   return const SnakePixel();
+                      // } else if (foodPos.contains(index)) {
+                      //   return const FoodPixel();
+                      // } else if (board[rowNumber][columnNumber].isRevealed) {
+                      //   return OpenPixel(
+                      //     number: board[rowNumber][columnNumber].bombsAround,
+                      //     isBomb: board[rowNumber][columnNumber].hasBomb,
+                      //     isRevealed: board[rowNumber][columnNumber].isRevealed,
+                      //   );
+                      // } else {
+                      //   return ClosedPixel(
+                      //     onLeftClick: () {
+                      //       handlePixelLeftClick(rowNumber, columnNumber);
+                      //     },
+                      //     onRightClick: () {
+                      //       handlePixelRightClick(rowNumber, columnNumber);
+                      //     },
+                      //   );
+                      // }
                     },
                   ),
                 ),

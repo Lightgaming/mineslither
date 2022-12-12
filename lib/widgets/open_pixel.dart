@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:mineslither/utils/app_assets.dart';
 
 class OpenPixel extends StatelessWidget {
-  const OpenPixel({super.key, this.number});
+  const OpenPixel({
+    super.key,
+    this.number,
+    this.isBomb = false,
+    this.isRevealed = false,
+  });
 
   final int? number;
+
+  final bool isBomb;
+  final bool isRevealed;
 
   Widget getImageForNumber() {
     switch (number!) {
@@ -33,8 +41,21 @@ class OpenPixel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: (number != null) ? getImageForNumber() : null,
+    return Stack(
+      children: [
+        Container(
+          child: (number != null && !(isBomb && isRevealed))
+              ? getImageForNumber()
+              : null,
+        ),
+        if (isBomb && isRevealed)
+          Center(
+            child: ColorFiltered(
+              colorFilter: const ColorFilter.mode(Colors.red, BlendMode.srcIn),
+              child: Image.asset(AppAssets.bomb),
+            ),
+          ),
+      ],
     );
   }
 }

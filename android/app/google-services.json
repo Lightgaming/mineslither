@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "833265131898",
+    "project_id": "mineslither-61de5",
+    "storage_bucket": "mineslither-61de5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:833265131898:android:fd9d72c4976103b951b6c3",
+        "android_client_info": {
+          "package_name": "com.example.mineslither"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "833265131898-f4t26lseu8t4r9dfhn42i0jgkeipuqac.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBL8fWRg_lFjFsu_SlxWwSBQoEb_yjulnU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "833265131898-f4t26lseu8t4r9dfhn42i0jgkeipuqac.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "833265131898-rs2j2nn6s176m3b18qtq3eonpi8skugo.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mineslither"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
