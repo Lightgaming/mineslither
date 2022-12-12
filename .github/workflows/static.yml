@@ -47,7 +47,7 @@ jobs:
           channel: 'stable'     
 
       - name: Building Web Project
-        run: flutter build web --web-renderer canvaskit --release --base-href "https://lightgaming.github.io/mineslither"
+        run: flutter build web --web-renderer canvaskit --release --base-href "/mineslither/"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
