@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mineslither/main.dart';
+import 'package:mineslither/utils/app_settings.dart';
 import 'package:mineslither/widgets/app_bar.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -10,28 +10,38 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController timerDurationController = TextEditingController();
-
-  // init
-  @override
-  void initState() {
-    super.initState();
-  }
+  bool easyMode = false;
 
   @override
   Widget build(BuildContext context) {
+    easyMode = AppSettings().getEasyMode();
     return Scaffold(
       appBar: const GameAppBar(),
-      body: Column(
-        children: [
-          const Text('Settings'),
-          // Timer Duration
-
-          TextField(
-            keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            controller: timerDurationController,
-          )
-        ],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Settings',
+              style: TextStyle(fontSize: 24.0),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Easy Mode'),
+                Switch(
+                  value: easyMode,
+                  onChanged: (val) {
+                    val
+                        ? AppSettings().setEasyModeTrue()
+                        : AppSettings().setEasyModeFalse();
+                    setState(() {});
+                  },
+                )
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

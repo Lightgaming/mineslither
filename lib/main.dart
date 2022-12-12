@@ -4,6 +4,7 @@ import 'package:localstorage/localstorage.dart';
 import 'package:mineslither/config/app_config.dart';
 import 'package:mineslither/config/app_theme.dart';
 import 'package:mineslither/screens/game_screen.dart';
+import 'package:mineslither/screens/instructions_screen.dart';
 import 'package:mineslither/screens/main_menu_screen.dart';
 import 'package:mineslither/screens/settings_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -38,6 +39,7 @@ class MyApp extends StatelessWidget {
         '/': (context) => const MainMenuScreen(),
         '/play': (context) => const GameScreen(),
         '/settings': (context) => const SettingsScreen(),
+        '/tutorial': (context) => const InstructionsScreen(),
       },
     );
   }

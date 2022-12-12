@@ -28,10 +28,10 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // Navigator.pushNamed(context, '/play');
+                  Navigator.pushNamed(context, '/tutorial');
                 },
-                icon: const Icon(Icons.scoreboard),
-                label: const Text('Scoreboard'),
+                icon: const Icon(Icons.help),
+                label: const Text('Instructions'),
               ),
             ),
             Padding(

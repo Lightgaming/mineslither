@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mineslither/utils/app_settings.dart';
 import 'package:mineslither/utils/pixel.dart';
 import 'package:mineslither/widgets/app_bar.dart';
 import 'package:mineslither/widgets/closed_pixel.dart';
@@ -162,6 +163,16 @@ class _GameScreenState extends State<GameScreen> {
     // Stop timer
     gameTimer?.cancel();
 
+    if (!AppSettings().getEasyMode()) {
+      setState(() {
+        for (var i = 0; i < board.length; i++) {
+          for (var j = 0; j < board[i].length; j++) {
+            board[i][j].isRevealed = true;
+          }
+        }
+      });
+    }
+
     showDialog(
       context: context,
       builder: (context) {
@@ -169,27 +180,37 @@ class _GameScreenState extends State<GameScreen> {
           title: const Text('Game Over'),
           content: Text(reason),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                gameTimer =
-                    Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-                  gameLoop();
-                });
-              },
-              child: const Text('continue'),
+            SizedBox(
+              child: AppSettings().getEasyMode()
+                  ? TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        gameTimer = Timer.periodic(
+                            const Duration(milliseconds: 1000), (timer) {
+                          gameLoop();
+                        });
+                      },
+                      child: const Text('continue'),
+                    )
+                  : null,
             ),
             TextButton(
               onPressed: () {
-                setState(() {
-                  for (var i = 0; i < board.length; i++) {
-                    for (var j = 0; j < board[i].length; j++) {
-                      board[i][j].isRevealed = true;
+                if (AppSettings().getEasyMode()) {
+                  setState(() {
+                    for (var i = 0; i < board.length; i++) {
+                      for (var j = 0; j < board[i].length; j++) {
+                        board[i][j].isRevealed = true;
+                      }
                     }
-                  }
-                });
+                  });
 
-                Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                  return;
+                } else {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                }
               },
               child: const Text('close'),
             ),
