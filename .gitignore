@@ -12,6 +12,7 @@ migrate_working_dir/
 
 # Visual Studio Code related
 .vscode/
+.vscode/*
 
 # IntelliJ related
 *.iml
