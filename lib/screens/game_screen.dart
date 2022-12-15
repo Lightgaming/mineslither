@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mineslither/utils/app_settings.dart';
@@ -9,6 +9,7 @@ import 'package:mineslither/widgets/app_bar.dart';
 import 'package:mineslither/widgets/closed_pixel.dart';
 import 'package:mineslither/widgets/food_pixel.dart';
 import 'package:mineslither/widgets/open_pixel.dart';
+import 'package:mineslither/widgets/play_button.dart';
 import 'package:mineslither/widgets/snake_pixel.dart';
 
 enum Direction { up, down, left, right }
@@ -27,17 +28,12 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   Timer? gameTimer;
+  Widget? playButton;
   Direction lastDirection = Direction.right;
   int bombCount = 0;
   int foodCount = 0;
 
-  Snake snake = Snake(
-    body: [],
-    direction: Direction.right,
-    length: 0,
-    score: 0,
-    isDead: false,
-  );
+  List<Pixel> snake = [];
 
   List<List<Pixel>> board = [];
 
@@ -45,14 +41,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    // document.onContextMenu.listen((event) => event.preventDefault());
-    // game.init();
     _initialiseGame();
-    inspect(snake);
-    gameTimer?.cancel();
-    gameTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-      gameLoop();
-    });
   }
 
   @override
@@ -61,60 +50,94 @@ class _GameScreenState extends State<GameScreen> {
     super.dispose();
   }
 
-  // Initialises all lists
+  void _play() {
+    setState(() {
+      debugPrint('Starting game...');
+      gameTimer?.cancel();
+      gameTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+        gameLoop();
+      });
+      playButton = null;
+    });
+  }
+
   void _initialiseGame() {
-    debugPrint('Initialising game...');
-    // Initialise all squares to having no bombs
-    board = List.generate(height, (i) {
-      return List.generate(width, (j) {
-        if (i == 12 && (j == 13 || j == 14 || j == 15)) {
-          snake.body.add(Pixel(
+    setState(() {
+      debugPrint('Initialising game...');
+      // Initialise all squares to having no bombs
+      playButton = PlayButton(
+        onPressed: () => _play(),
+      );
+      board.clear();
+      board = List.generate(height, (i) {
+        // snake.clear();
+        return List.generate(width, (j) {
+          if (i == 12 && (j == 13 || j == 14 || j == 15)) {
+            snake.add(Pixel(
+              rowNumber: i,
+              columnNumber: j,
+              bombsAround: 0,
+              hasBomb: false,
+              isRevealed: true,
+              isFood: false,
+            ));
+          }
+          return Pixel(
             rowNumber: i,
             columnNumber: j,
             bombsAround: 0,
             hasBomb: false,
-            isRevealed: true,
+            isRevealed: false,
             isFood: false,
-          ));
-        }
-        return Pixel(
-          rowNumber: i,
-          columnNumber: j,
-          bombsAround: 0,
-          hasBomb: false,
-          isRevealed: false,
-          isFood: false,
-        );
+          );
+        });
       });
-    });
 
-    // Randomly generate bombs
-    Random random = Random();
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j++) {
-        int randomNumber = random.nextInt(maxProbability);
-        if (randomNumber < bombProbability) {
-          board[i][j].hasBomb = true;
-          bombCount++;
-        }
-      }
-    }
-
-    // Reveal in a radius 5 in the middle
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j++) {
-        if (i >= 9 && i <= 15 && j >= 10 && j <= 20) {
-          board[i][j].isRevealed = true;
-
-          if (board[i][j].hasBomb) {
-            board[i][j].hasBomb = false;
-            bombCount--;
+      // Randomly generate bombs
+      Random random = Random();
+      for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+          int randomNumber = random.nextInt(maxProbability);
+          if (randomNumber < bombProbability) {
+            board[i][j].hasBomb = true;
+            bombCount++;
           }
         }
       }
-    }
+
+      // Reveal in a radius 5 in the middle
+      for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+          if (i >= 9 && i <= 15 && j >= 10 && j <= 20) {
+            board[i][j].isRevealed = true;
+
+            if (board[i][j].hasBomb) {
+              board[i][j].hasBomb = false;
+              bombCount--;
+            }
+          }
+        }
+      }
+    });
 
     calculateBombs();
+  }
+
+  void resetGame() {
+    setState(() {
+      playButton = PlayButton(
+        onPressed: () => _play(),
+      );
+      snake = [];
+      bombCount = 0;
+      foodCount = 0;
+      for (var i = 0; i < board.length; i++) {
+        for (var j = 0; j < board[i].length; j++) {
+          board[i][j].isRevealed = false;
+        }
+      }
+    });
+    _initialiseGame();
   }
 
   void calculateBombs() {
@@ -208,7 +231,7 @@ class _GameScreenState extends State<GameScreen> {
                   Navigator.of(context).pop();
                   return;
                 } else {
-                  Navigator.of(context).pop();
+                  resetGame();
                   Navigator.of(context).pop();
                 }
               },
@@ -245,12 +268,12 @@ class _GameScreenState extends State<GameScreen> {
   void gameLoop() {
     setState(() {
       // add snake head to the and of the list
-      int rowNumber = snake.body.last.rowNumber;
-      int columnNumber = snake.body.last.columnNumber;
+      int rowNumber = snake.last.rowNumber;
+      int columnNumber = snake.last.columnNumber;
       switch (lastDirection) {
         case Direction.up:
           // if the snake eats itself, game over
-          if (snake.body.any((element) =>
+          if (snake.any((element) =>
               element.rowNumber == rowNumber - 1 &&
               element.columnNumber == columnNumber)) {
             gameTimer?.cancel();
@@ -263,7 +286,7 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snake.body.add(Pixel(
+          snake.add(Pixel(
             rowNumber: rowNumber - 1,
             columnNumber: columnNumber,
             bombsAround: 0,
@@ -274,7 +297,7 @@ class _GameScreenState extends State<GameScreen> {
           break;
         case Direction.left:
           // if the snake eats itself, game over
-          if (snake.body.any((element) =>
+          if (snake.any((element) =>
               element.columnNumber == columnNumber - 1 &&
               element.rowNumber == rowNumber)) {
             gameTimer?.cancel();
@@ -286,7 +309,7 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snake.body.add(Pixel(
+          snake.add(Pixel(
             rowNumber: rowNumber,
             columnNumber: columnNumber - 1,
             bombsAround: 0,
@@ -298,7 +321,7 @@ class _GameScreenState extends State<GameScreen> {
 
         case Direction.right:
           // if the snake eats itself, game over
-          if (snake.body.any((element) =>
+          if (snake.any((element) =>
               element.columnNumber == columnNumber + 1 &&
               element.rowNumber == rowNumber)) {
             gameTimer?.cancel();
@@ -310,7 +333,7 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snake.body.add(Pixel(
+          snake.add(Pixel(
             rowNumber: rowNumber,
             columnNumber: columnNumber + 1,
             bombsAround: 0,
@@ -322,7 +345,7 @@ class _GameScreenState extends State<GameScreen> {
 
         case Direction.down:
           // if the snake eats itself, game over
-          if (snake.body.any((element) =>
+          if (snake.any((element) =>
               element.rowNumber == rowNumber + 1 &&
               element.columnNumber == columnNumber)) {
             gameTimer?.cancel();
@@ -334,7 +357,7 @@ class _GameScreenState extends State<GameScreen> {
             gameOver('You hit the wall!');
             break;
           }
-          snake.body.add(Pixel(
+          snake.add(Pixel(
             rowNumber: rowNumber + 1,
             columnNumber: columnNumber,
             bombsAround: 0,
@@ -349,7 +372,7 @@ class _GameScreenState extends State<GameScreen> {
 
       // remove snake head
       if (!board[rowNumber][columnNumber].isFood) {
-        snake.body.removeAt(0);
+        snake.removeAt(0);
       } else {
         board[rowNumber][columnNumber].isFood = false;
         foodCount--;
@@ -385,6 +408,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void handlePixelRightClick(int rowNumber, int columnNumber) {
+    if (playButton != null) return;
     setState(() {
       if (board[rowNumber][columnNumber].hasBomb) {
         // Remove bomb
@@ -428,6 +452,8 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void handlePixelLeftClick(int rowNumber, int columnNumber) {
+    if (playButton != null) return;
+
     setState(() {
       if (board[rowNumber][columnNumber].hasBomb) {
         // game over
@@ -488,6 +514,7 @@ class _GameScreenState extends State<GameScreen> {
       focusNode: FocusNode(),
       autofocus: true,
       child: Scaffold(
+        floatingActionButton: playButton,
         backgroundColor: Colors.grey,
         appBar: const GameAppBar(),
         body: Center(
@@ -511,11 +538,11 @@ class _GameScreenState extends State<GameScreen> {
                       int columnNumber = (index % width);
 
                       // snake state
-                      if (snake.body.any((element) =>
+                      if (snake.any((element) =>
                           element.columnNumber == columnNumber &&
                           element.rowNumber == rowNumber)) {
-                        if (snake.body.last.rowNumber == rowNumber &&
-                            snake.body.last.columnNumber == columnNumber) {
+                        if (snake.last.rowNumber == rowNumber &&
+                            snake.last.columnNumber == columnNumber) {
                           return const SnakePixel(head: true);
                         }
                         return const SnakePixel();
@@ -544,8 +571,8 @@ class _GameScreenState extends State<GameScreen> {
                           handlePixelRightClick(rowNumber, columnNumber);
                         },
                       );
-                      // if (snake.body.any((element) => element.)) {
-                      //   if (index == snake.body.last) {
+                      // if (snake.any((element) => element.)) {
+                      //   if (index == snake.last) {
                       //     return const SnakePixel(head: true);
                       //   }
                       //   return const SnakePixel();

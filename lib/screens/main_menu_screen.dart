@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mineslither/widgets/app_bar.dart';
 
 class MainMenuScreen extends StatelessWidget {
@@ -18,7 +19,7 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/play');
+                  GoRouter.of(context).go('/play');
                 },
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Play'),
@@ -28,7 +29,7 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/tutorial');
+                  GoRouter.of(context).go('/tutorial');
                 },
                 icon: const Icon(Icons.help),
                 label: const Text('Instructions'),
@@ -38,7 +39,7 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/settings');
+                  GoRouter.of(context).go('/settings');
                 },
                 icon: const Icon(Icons.settings),
                 label: const Text('Settings'),
