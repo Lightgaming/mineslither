@@ -10,6 +10,7 @@ import 'package:mineslither/screens/game_screen.dart';
 import 'package:mineslither/screens/instructions_screen.dart';
 import 'package:mineslither/screens/main_menu_screen.dart';
 import 'package:mineslither/screens/settings_screen.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
 import 'firebase_options.dart';
 
@@ -38,6 +39,7 @@ final storage = LocalStorage('settings');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   // check if is windows then disable firebase
   if (!Platform.isWindows) {
     await Firebase.initializeApp(
