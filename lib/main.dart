@@ -41,11 +41,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   // check if is windows then disable firebase
-  if (!Platform.isWindows) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
+  //if (!Platform.isWindows) {
+  //  await Firebase.initializeApp(
+  //    options: DefaultFirebaseOptions.currentPlatform,
+  //  );
+  //}
 
   // if (kDebugMode) {
   //   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
