@@ -59,7 +59,7 @@ jobs:
         uses: actions/deploy-pages@v1
         
       - name: Building Windows Project
-        run: flutter pub run msix:create
+        run: flutter build windows --release
         
       - name: Create Windows Installer 
         run: flutter pub run msix:create
