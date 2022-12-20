@@ -58,11 +58,8 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v1
         
-      - name: Building Windows Project
-        run: flutter build windows --release
-        
-      - name: Create Windows Installer 
-        run: flutter pub run msix:create
+      - name: Building Linux Project
+        run: flutter build linux --release
       
       - name: Create Release
         id: create_release
@@ -81,7 +78,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./build/windows/runner/Release/mineslither.msix
-          asset_name: mineslither.msix
-          asset_content_type: application/zip
+          asset_path: ./build/linux/
+          # asset_name: mineslither.msix
+          # asset_content_type: application/zip
 
