@@ -41,6 +41,7 @@ dependencies:
   firebase_crashlytics: ^3.0.7
   firebase_analytics: ^10.0.7
   go_router: ^5.2.4
+  flutter_donation_buttons: ^0.1.6
 
 msix_config:
   display_name: MineSlither
@@ -87,6 +88,7 @@ flutter:
     - assets/images/bomb.png
     - assets/images/facingDown.png
     - assets/images/flagged.png
+    - assets/images/bg.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
