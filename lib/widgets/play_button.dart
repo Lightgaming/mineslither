@@ -12,7 +12,12 @@ class PlayButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton(
       onPressed: onPressed,
-      child: const Icon(Icons.play_arrow),
+      elevation: 20,
+      backgroundColor: Theme.of(context).colorScheme.background,
+      child: Icon(
+        Icons.play_arrow,
+        color: Theme.of(context).colorScheme.onBackground,
+      ),
     );
   }
 }

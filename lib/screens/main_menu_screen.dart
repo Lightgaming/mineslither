@@ -13,7 +13,7 @@ class MainMenuScreen extends StatelessWidget {
       appBar: const GameAppBar(),
       body: Stack(
         children: [
-          Expanded(
+          Positioned.fill(
             child: Center(
               child: Image.asset('assets/images/bg.png', fit: BoxFit.cover),
             ),
@@ -29,6 +29,11 @@ class MainMenuScreen extends StatelessWidget {
                     onPressed: () {
                       GoRouter.of(context).go('/play');
                     },
+                    style: ButtonStyle(
+                      padding: MaterialStateProperty.all(
+                        const EdgeInsets.all(20),
+                      ),
+                    ),
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Play'),
                   ),
@@ -39,6 +44,11 @@ class MainMenuScreen extends StatelessWidget {
                     onPressed: () {
                       GoRouter.of(context).go('/tutorial');
                     },
+                    style: ButtonStyle(
+                      padding: MaterialStateProperty.all(
+                        const EdgeInsets.all(20),
+                      ),
+                    ),
                     icon: const Icon(Icons.help),
                     label: const Text('Instructions'),
                   ),
@@ -49,6 +59,11 @@ class MainMenuScreen extends StatelessWidget {
                     onPressed: () {
                       GoRouter.of(context).go('/settings');
                     },
+                    style: ButtonStyle(
+                      padding: MaterialStateProperty.all(
+                        const EdgeInsets.all(20),
+                      ),
+                    ),
                     icon: const Icon(Icons.settings),
                     label: const Text('Settings'),
                   ),
@@ -60,6 +75,11 @@ class MainMenuScreen extends StatelessWidget {
                       // Exit app
                       SystemNavigator.pop();
                     },
+                    style: ButtonStyle(
+                      padding: MaterialStateProperty.all(
+                        const EdgeInsets.all(20),
+                      ),
+                    ),
                     icon: const Icon(Icons.exit_to_app),
                     label: const Text('Exit'),
                   ),
@@ -67,11 +87,27 @@ class MainMenuScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Align(
+          Align(
             alignment: Alignment.bottomRight,
             child: Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10),
               child: PayPalButton(
+                style: ButtonStyle(
+                  foregroundColor: MaterialStateProperty.all(Colors.white),
+                  padding: MaterialStateProperty.all(
+                    const EdgeInsets.all(20),
+                  ),
+                ),
+                onDonation: () {
+                  print('Donation successful');
+                  // Snack Bar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content:
+                          Text('Thank you for showing interest into my work!'),
+                    ),
+                  );
+                },
                 paypalButtonId: "VYTU88VHK2QD4",
               ),
             ),

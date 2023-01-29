@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mineslither/utils/app_settings.dart';
+import 'package:mineslither/utils/logger.dart';
 import 'package:mineslither/utils/pixel.dart';
 import 'package:mineslither/widgets/app_bar.dart';
 import 'package:mineslither/widgets/closed_pixel.dart';
@@ -32,6 +33,8 @@ class _GameScreenState extends State<GameScreen> {
   Direction lastDirection = Direction.right;
   int bombCount = 0;
   int foodCount = 0;
+  double hunger = 200;
+  int period = 900;
 
   List<Pixel> snake = [];
 
@@ -41,7 +44,7 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _initialiseGame();
+    _initializeGame();
   }
 
   @override
@@ -52,19 +55,19 @@ class _GameScreenState extends State<GameScreen> {
 
   void _play() {
     setState(() {
-      debugPrint('Starting game...');
+      GameLogger.log('Starting game...');
       gameTimer?.cancel();
-      gameTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      gameTimer = Timer.periodic(Duration(milliseconds: period), (timer) {
         gameLoop();
       });
       playButton = null;
     });
   }
 
-  void _initialiseGame() {
+  void _initializeGame() {
     setState(() {
-      debugPrint('Initialising game...');
-      // Initialise all squares to having no bombs
+      GameLogger.log('Initialize game...');
+      // Initialize all squares to having no bombs
       playButton = PlayButton(
         onPressed: () => _play(),
       );
@@ -137,7 +140,7 @@ class _GameScreenState extends State<GameScreen> {
         }
       }
     });
-    _initialiseGame();
+    _initializeGame();
   }
 
   void calculateBombs() {
@@ -212,6 +215,7 @@ class _GameScreenState extends State<GameScreen> {
                             const Duration(milliseconds: 1000), (timer) {
                           gameLoop();
                         });
+                        hunger = 200;
                       },
                       child: const Text('continue'),
                     )
@@ -265,110 +269,94 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
+  void addSnakePixel(int rowNumber, int columnNumber, Direction direction) {
+    snake.add(Pixel(
+      rowNumber: direction.name == 'up'
+          ? rowNumber - 1
+          : direction.name == 'down'
+              ? rowNumber + 1
+              : rowNumber,
+      columnNumber: direction.name == 'left'
+          ? columnNumber - 1
+          : direction.name == 'right'
+              ? columnNumber + 1
+              : columnNumber,
+      bombsAround: 0,
+      hasBomb: false,
+      isRevealed: true,
+      isFood: false,
+    ));
+  }
+
+  bool checkIfSnakeEatsItself(
+      int rowNumber, int columnNumber, Direction direction) {
+    return snake.any(
+      (element) =>
+          element.rowNumber ==
+              (direction.name == 'up'
+                  ? rowNumber - 1
+                  : direction.name == 'down'
+                      ? rowNumber + 1
+                      : rowNumber) &&
+          element.columnNumber ==
+              (direction.name == 'left'
+                  ? columnNumber - 1
+                  : direction.name == 'right'
+                      ? columnNumber + 1
+                      : columnNumber),
+    );
+  }
+
+  bool checkIfSnakeHitsWall(
+      int rowNumber, int columnNumber, Direction direction) {
+    // if the snake hits the outer wall return true
+    if (((direction.name == 'up' && rowNumber - 1 < 0) ||
+        (direction.name == 'down' && rowNumber + 1 >= board.length) ||
+        (direction.name == 'left' && columnNumber - 1 < 0) ||
+        (direction.name == 'right' && columnNumber + 1 >= board[0].length))) {
+      return true;
+    }
+
+    // if the snake hits a closed pixel return true
+    return !board[direction.name == 'up'
+            ? rowNumber - 1
+            : direction.name == 'down'
+                ? rowNumber + 1
+                : rowNumber][direction.name == 'left'
+            ? columnNumber - 1
+            : direction.name == 'right'
+                ? columnNumber + 1
+                : columnNumber]
+        .isRevealed;
+  }
+
+  void checkSnakeGameEnd(int rowNumber, int columnNumber, Direction direction) {
+    // if the snake has no hunger left, game over
+    if (hunger - 10 <= 0) {
+      gameOver('You starved to death!');
+    }
+    // if the snake eats itself, game over
+    if (checkIfSnakeEatsItself(rowNumber, columnNumber, lastDirection)) {
+      gameTimer?.cancel();
+      gameOver('You ate yourself!');
+    }
+    // if the snake hits the wall, game over
+    if (checkIfSnakeHitsWall(rowNumber, columnNumber, lastDirection)) {
+      gameTimer?.cancel();
+      gameOver('You hit the wall!');
+    }
+  }
+
   void gameLoop() {
     setState(() {
       // add snake head to the and of the list
       int rowNumber = snake.last.rowNumber;
       int columnNumber = snake.last.columnNumber;
-      switch (lastDirection) {
-        case Direction.up:
-          // if the snake eats itself, game over
-          if (snake.any((element) =>
-              element.rowNumber == rowNumber - 1 &&
-              element.columnNumber == columnNumber)) {
-            gameTimer?.cancel();
-            gameOver('You ate yourself!');
-            break;
-          }
-          // if the snake hits the wall, game over
-          if (!board[rowNumber - 1][columnNumber].isRevealed) {
-            gameTimer?.cancel();
-            gameOver('You hit the wall!');
-            break;
-          }
-          snake.add(Pixel(
-            rowNumber: rowNumber - 1,
-            columnNumber: columnNumber,
-            bombsAround: 0,
-            hasBomb: false,
-            isRevealed: true,
-            isFood: false,
-          ));
-          break;
-        case Direction.left:
-          // if the snake eats itself, game over
-          if (snake.any((element) =>
-              element.columnNumber == columnNumber - 1 &&
-              element.rowNumber == rowNumber)) {
-            gameTimer?.cancel();
-            gameOver('You ate yourself!');
-            break;
-          }
-          if (!board[rowNumber][columnNumber - 1].isRevealed) {
-            gameTimer?.cancel();
-            gameOver('You hit the wall!');
-            break;
-          }
-          snake.add(Pixel(
-            rowNumber: rowNumber,
-            columnNumber: columnNumber - 1,
-            bombsAround: 0,
-            hasBomb: false,
-            isRevealed: true,
-            isFood: false,
-          ));
-          break;
 
-        case Direction.right:
-          // if the snake eats itself, game over
-          if (snake.any((element) =>
-              element.columnNumber == columnNumber + 1 &&
-              element.rowNumber == rowNumber)) {
-            gameTimer?.cancel();
-            gameOver('You ate yourself!');
-            break;
-          }
-          if (!board[rowNumber][columnNumber + 1].isRevealed) {
-            gameTimer?.cancel();
-            gameOver('You hit the wall!');
-            break;
-          }
-          snake.add(Pixel(
-            rowNumber: rowNumber,
-            columnNumber: columnNumber + 1,
-            bombsAround: 0,
-            hasBomb: false,
-            isRevealed: true,
-            isFood: false,
-          ));
-          break;
+      checkSnakeGameEnd(rowNumber, columnNumber, lastDirection);
+      addSnakePixel(rowNumber, columnNumber, lastDirection);
 
-        case Direction.down:
-          // if the snake eats itself, game over
-          if (snake.any((element) =>
-              element.rowNumber == rowNumber + 1 &&
-              element.columnNumber == columnNumber)) {
-            gameTimer?.cancel();
-            gameOver('You ate yourself!');
-            break;
-          }
-          if (!board[rowNumber + 1][columnNumber].isRevealed) {
-            gameTimer?.cancel();
-            gameOver('You hit the wall!');
-            break;
-          }
-          snake.add(Pixel(
-            rowNumber: rowNumber + 1,
-            columnNumber: columnNumber,
-            bombsAround: 0,
-            hasBomb: false,
-            isRevealed: true,
-            isFood: false,
-          ));
-          break;
-        default:
-          break;
-      }
+      hunger -= 10;
 
       // remove snake head
       if (!board[rowNumber][columnNumber].isFood) {
@@ -376,9 +364,11 @@ class _GameScreenState extends State<GameScreen> {
       } else {
         board[rowNumber][columnNumber].isFood = false;
         foodCount--;
+        hunger = 200;
       }
 
-      debugPrint('BombCount: $bombCount | FoodCount: $foodCount');
+      GameLogger.logFull(
+          gameTimer, lastDirection, bombCount, foodCount, hunger, period);
 
       if (bombCount == 0 && foodCount == 0) {
         winGame();
@@ -571,39 +561,17 @@ class _GameScreenState extends State<GameScreen> {
                           handlePixelRightClick(rowNumber, columnNumber);
                         },
                       );
-                      // if (snake.any((element) => element.)) {
-                      //   if (index == snake.last) {
-                      //     return const SnakePixel(head: true);
-                      //   }
-                      //   return const SnakePixel();
-                      // } else if (foodPos.contains(index)) {
-                      //   return const FoodPixel();
-                      // } else if (board[rowNumber][columnNumber].isRevealed) {
-                      //   return OpenPixel(
-                      //     number: board[rowNumber][columnNumber].bombsAround,
-                      //     isBomb: board[rowNumber][columnNumber].hasBomb,
-                      //     isRevealed: board[rowNumber][columnNumber].isRevealed,
-                      //   );
-                      // } else {
-                      //   return ClosedPixel(
-                      //     onLeftClick: () {
-                      //       handlePixelLeftClick(rowNumber, columnNumber);
-                      //     },
-                      //     onRightClick: () {
-                      //       handlePixelRightClick(rowNumber, columnNumber);
-                      //     },
-                      //   );
-                      // }
                     },
                   ),
                 ),
               ),
-              // Expanded(
-              //     child: Container(
-              //   color: Colors.green,
-              //   child: Text(
-              //       'Timer: ${gameTimer?.isActive.toString()} Last Direction: $lastDirection'),
-              // )),
+              Expanded(
+                  child: SizedBox(
+                width: double.infinity,
+                child: LinearProgressIndicator(
+                  value: hunger / 200,
+                ),
+              )),
             ],
           ),
         ),

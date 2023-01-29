@@ -37,7 +37,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         : AppSettings().setEasyModeFalse();
                     setState(() {});
                   },
-                )
+                ),
               ],
             )
           ],
