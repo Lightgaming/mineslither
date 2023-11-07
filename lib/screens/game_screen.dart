@@ -132,9 +132,6 @@ class _GameScreenState extends State<GameScreen> {
 
   void resetGame() {
     setState(() {
-      playButton = PlayButton(
-        onPressed: () => _play(),
-      );
       snake = [];
       bombCount = 0;
       foodCount = 0;
@@ -227,21 +224,15 @@ class _GameScreenState extends State<GameScreen> {
             ),
             TextButton(
               onPressed: () {
-                if (AppSettings().getEasyMode()) {
-                  setState(() {
-                    for (var i = 0; i < board.length; i++) {
-                      for (var j = 0; j < board[i].length; j++) {
-                        board[i][j].isRevealed = true;
-                      }
+                setState(() {
+                  for (var i = 0; i < board.length; i++) {
+                    for (var j = 0; j < board[i].length; j++) {
+                      board[i][j].isRevealed = true;
                     }
-                  });
-
-                  Navigator.of(context).pop();
-                  return;
-                } else {
-                  resetGame();
-                  Navigator.of(context).pop();
-                }
+                  }
+                });
+                resetGame();
+                Navigator.of(context).pop();
               },
               child: const Text('close'),
             ),
