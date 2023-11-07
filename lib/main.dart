@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:localstorage/localstorage.dart';
 import 'package:mineslither/config/app_config.dart';
@@ -34,18 +33,6 @@ final storage = LocalStorage('settings');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  usePathUrlStrategy();
-  // check if is windows then disable firebase
-  //if (!Platform.isWindows) {
-  //  await Firebase.initializeApp(
-  //    options: DefaultFirebaseOptions.currentPlatform,
-  //  );
-  //}
-
-  // if (kDebugMode) {
-  //   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-  // }
-
   runApp(const MyApp());
 }
 

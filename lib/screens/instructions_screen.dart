@@ -6,12 +6,12 @@ class InstructionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const GameAppBar(),
+    return const Scaffold(
+      appBar: GameAppBar(),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Text('Instructions', style: TextStyle(fontSize: 24.0)),
             // Instructions
             Text(

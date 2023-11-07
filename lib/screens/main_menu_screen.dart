@@ -99,7 +99,7 @@ class MainMenuScreen extends StatelessWidget {
                   ),
                 ),
                 onDonation: () {
-                  print('Donation successful');
+                  debugPrint('Donation successful');
                   // Snack Bar
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

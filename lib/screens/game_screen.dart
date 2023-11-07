@@ -33,7 +33,7 @@ class _GameScreenState extends State<GameScreen> {
   Direction lastDirection = Direction.right;
   int bombCount = 0;
   int foodCount = 0;
-  double hunger = 200;
+  double hunger = 0;
   int period = 900;
 
   List<Pixel> snake = [];
@@ -67,6 +67,10 @@ class _GameScreenState extends State<GameScreen> {
   void _initializeGame() {
     setState(() {
       GameLogger.log('Initialize game...');
+      // Reset direction
+      lastDirection = Direction.right;
+      // Set Hunger
+      hunger = 200;
       // Initialize all squares to having no bombs
       playButton = PlayButton(
         onPressed: () => _play(),
