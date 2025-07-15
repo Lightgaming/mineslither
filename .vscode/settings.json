@@ -1,6 +1,13 @@
 {
     "editor.codeActionsOnSave": {
-        "source.fixAll": true,
-        "source.organizeImports": true
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
     },
+    "cSpell.words": [
+        "grey",
+        "mineslither",
+        "paypal",
+        "prefs",
+        "VYTU"
+    ],
 }

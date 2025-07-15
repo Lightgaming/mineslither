@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'dart:math';
 
@@ -6,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:mineslither/utils/app_settings.dart';
 import 'package:mineslither/utils/logger.dart';
 import 'package:mineslither/utils/pixel.dart';
+import 'package:mineslither/utils/sound_manager.dart';
 import 'package:mineslither/widgets/app_bar.dart';
 import 'package:mineslither/widgets/closed_pixel.dart';
 import 'package:mineslither/widgets/food_pixel.dart';
@@ -31,13 +34,13 @@ class _GameScreenState extends State<GameScreen> {
   Timer? gameTimer;
   Widget? playButton;
   Direction lastDirection = Direction.right;
+  Direction nextDirection = Direction.right; // Buffer for next direction
   int bombCount = 0;
   int foodCount = 0;
   double hunger = 0;
   int period = 900;
 
   List<Pixel> snake = [];
-
   List<List<Pixel>> board = [];
 
   // init the game
@@ -45,6 +48,7 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     _initializeGame();
+    SoundManager().playBackgroundMusic();
   }
 
   @override
@@ -62,6 +66,7 @@ class _GameScreenState extends State<GameScreen> {
       });
       playButton = null;
     });
+    SoundManager().playClickSound();
   }
 
   void _initializeGame() {
@@ -69,6 +74,7 @@ class _GameScreenState extends State<GameScreen> {
       GameLogger.log('Initialize game...');
       // Reset direction
       lastDirection = Direction.right;
+      nextDirection = Direction.right;
       // Set Hunger
       hunger = 200;
       // Initialize all squares to having no bombs
@@ -77,7 +83,6 @@ class _GameScreenState extends State<GameScreen> {
       );
       board.clear();
       board = List.generate(height, (i) {
-        // snake.clear();
         return List.generate(width, (j) {
           if (i == 12 && (j == 13 || j == 14 || j == 15)) {
             snake.add(Pixel(
@@ -190,6 +195,14 @@ class _GameScreenState extends State<GameScreen> {
     // Stop timer
     gameTimer?.cancel();
 
+    if (reason.contains('bomb') || reason.contains('mine')) {
+      SoundManager().playMineExplodeSound();
+    } else {
+      SoundManager().playGameOverSound();
+    }
+
+    SoundManager().pauseBackgroundMusic();
+
     if (!AppSettings().getEasyMode()) {
       setState(() {
         for (var i = 0; i < board.length; i++) {
@@ -217,6 +230,9 @@ class _GameScreenState extends State<GameScreen> {
                           gameLoop();
                         });
                         hunger = 200;
+
+                        SoundManager().resumeBackgroundMusic();
+                        SoundManager().playClickSound();
                       },
                       child: const Text('continue'),
                     )
@@ -233,6 +249,9 @@ class _GameScreenState extends State<GameScreen> {
                 });
                 resetGame();
                 Navigator.of(context).pop();
+
+                SoundManager().resumeBackgroundMusic();
+                SoundManager().playClickSound();
               },
               child: const Text('close'),
             ),
@@ -244,6 +263,8 @@ class _GameScreenState extends State<GameScreen> {
 
   void winGame() {
     gameTimer?.cancel();
+    SoundManager().playWinSound();
+    SoundManager().pauseBackgroundMusic();
     showDialog(
       context: context,
       builder: (context) {
@@ -255,6 +276,8 @@ class _GameScreenState extends State<GameScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 Navigator.of(context).pop();
+                SoundManager().playClickSound();
+                SoundManager().stopBackgroundMusic();
               },
               child: const Text('OK'),
             ),
@@ -331,12 +354,12 @@ class _GameScreenState extends State<GameScreen> {
       gameOver('You starved to death!');
     }
     // if the snake eats itself, game over
-    if (checkIfSnakeEatsItself(rowNumber, columnNumber, lastDirection)) {
+    if (checkIfSnakeEatsItself(rowNumber, columnNumber, direction)) {
       gameTimer?.cancel();
       gameOver('You ate yourself!');
     }
     // if the snake hits the wall, game over
-    if (checkIfSnakeHitsWall(rowNumber, columnNumber, lastDirection)) {
+    if (checkIfSnakeHitsWall(rowNumber, columnNumber, direction)) {
       gameTimer?.cancel();
       gameOver('You hit the wall!');
     }
@@ -344,7 +367,10 @@ class _GameScreenState extends State<GameScreen> {
 
   void gameLoop() {
     setState(() {
-      // add snake head to the and of the list
+      // Use the buffered direction
+      lastDirection = nextDirection;
+
+      // add snake head to the end of the list
       int rowNumber = snake.last.rowNumber;
       int columnNumber = snake.last.columnNumber;
 
@@ -353,13 +379,18 @@ class _GameScreenState extends State<GameScreen> {
 
       hunger -= 10;
 
-      // remove snake head
+      // remove snake tail
       if (!board[rowNumber][columnNumber].isFood) {
         snake.removeAt(0);
+        if (snake.length % 5 == 0) {
+          SoundManager().playMoveSound();
+        }
       } else {
         board[rowNumber][columnNumber].isFood = false;
         foodCount--;
         hunger = 200;
+
+        SoundManager().playEatSound();
       }
 
       GameLogger.logFull(
@@ -383,7 +414,6 @@ class _GameScreenState extends State<GameScreen> {
                 !board[rowNumber + x][columnNumber + i].isRevealed &&
                 !board[rowNumber + x][columnNumber + i].hasBomb) {
               board[rowNumber + x][columnNumber + i].isRevealed = true;
-              // floodFill(rowNumber, columnNumber);
               floodFill(rowNumber + x, columnNumber + i);
             }
           }
@@ -397,6 +427,7 @@ class _GameScreenState extends State<GameScreen> {
     setState(() {
       if (board[rowNumber][columnNumber].hasBomb) {
         // Remove bomb
+        SoundManager().playMineDefuseSound();
         board[rowNumber][columnNumber].hasBomb = false;
         bombCount--;
         foodCount++;
@@ -439,6 +470,8 @@ class _GameScreenState extends State<GameScreen> {
   void handlePixelLeftClick(int rowNumber, int columnNumber) {
     if (playButton != null) return;
 
+    SoundManager().playClickSound();
+
     setState(() {
       if (board[rowNumber][columnNumber].hasBomb) {
         // game over
@@ -466,36 +499,57 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
+  // Fixed direction handling to prevent immediate reversals
   void setCurrentDirection(RawKeyEvent value) {
-    setState(() {
-      if (value.isKeyPressed(LogicalKeyboardKey.arrowDown) ||
-          value.isKeyPressed(LogicalKeyboardKey.keyS)) {
-        if (lastDirection != Direction.up) {
-          lastDirection = Direction.down;
-        }
-      } else if (value.isKeyPressed(LogicalKeyboardKey.arrowUp) ||
-          value.isKeyPressed(LogicalKeyboardKey.keyW)) {
-        if (lastDirection != Direction.down) {
-          lastDirection = Direction.up;
-        }
-      } else if (value.isKeyPressed(LogicalKeyboardKey.arrowLeft) ||
-          value.isKeyPressed(LogicalKeyboardKey.keyA)) {
-        if (lastDirection != Direction.right) {
-          lastDirection = Direction.left;
-        }
-      } else if (value.isKeyPressed(LogicalKeyboardKey.arrowRight) ||
-          value.isKeyPressed(LogicalKeyboardKey.keyD)) {
-        if (lastDirection != Direction.left) {
-          lastDirection = Direction.right;
-        }
+    Direction newDirection = nextDirection;
+
+    if (value.isKeyPressed(LogicalKeyboardKey.arrowDown) ||
+        value.isKeyPressed(LogicalKeyboardKey.keyS)) {
+      if (lastDirection != Direction.up) {
+        newDirection = Direction.down;
       }
+    } else if (value.isKeyPressed(LogicalKeyboardKey.arrowUp) ||
+        value.isKeyPressed(LogicalKeyboardKey.keyW)) {
+      if (lastDirection != Direction.down) {
+        newDirection = Direction.up;
+      }
+    } else if (value.isKeyPressed(LogicalKeyboardKey.arrowLeft) ||
+        value.isKeyPressed(LogicalKeyboardKey.keyA)) {
+      if (lastDirection != Direction.right) {
+        newDirection = Direction.left;
+      }
+    } else if (value.isKeyPressed(LogicalKeyboardKey.arrowRight) ||
+        value.isKeyPressed(LogicalKeyboardKey.keyD)) {
+      if (lastDirection != Direction.left) {
+        newDirection = Direction.right;
+      }
+    }
+
+    setState(() {
+      nextDirection = newDirection;
     });
+  }
+
+  Direction getSnakeDirection(int index) {
+    if (index == snake.length - 1) {
+      return lastDirection;
+    }
+    // For body segments, calculate direction based on position relative to next segment
+    Pixel current = snake[index];
+    Pixel next = snake[index + 1];
+
+    if (current.rowNumber < next.rowNumber) return Direction.down;
+    if (current.rowNumber > next.rowNumber) return Direction.up;
+    if (current.columnNumber < next.columnNumber) return Direction.right;
+    return Direction.left;
   }
 
   @override
   Widget build(BuildContext context) {
     return RawKeyboardListener(
-      onKey: (value) => setCurrentDirection(value),
+      onKey: (value) {
+        setCurrentDirection(value);
+      },
       focusNode: FocusNode(),
       autofocus: true,
       child: Scaffold(
@@ -522,15 +576,28 @@ class _GameScreenState extends State<GameScreen> {
                       int rowNumber = (index / width).floor();
                       int columnNumber = (index % width);
 
-                      // snake state
-                      if (snake.any((element) =>
-                          element.columnNumber == columnNumber &&
-                          element.rowNumber == rowNumber)) {
-                        if (snake.last.rowNumber == rowNumber &&
-                            snake.last.columnNumber == columnNumber) {
-                          return const SnakePixel(head: true);
+                      // Find snake segment index
+                      int snakeIndex = -1;
+                      for (int i = 0; i < snake.length; i++) {
+                        if (snake[i].columnNumber == columnNumber &&
+                            snake[i].rowNumber == rowNumber) {
+                          snakeIndex = i;
+                          break;
                         }
-                        return const SnakePixel();
+                      }
+
+                      // snake state
+                      if (snakeIndex != -1) {
+                        bool isHead = snakeIndex == snake.length - 1;
+                        bool isTail = snakeIndex == 0;
+                        Direction segmentDirection =
+                            getSnakeDirection(snakeIndex);
+
+                        return SnakePixel(
+                          head: isHead,
+                          direction: segmentDirection,
+                          isTail: isTail,
+                        );
                       }
 
                       // food state
@@ -560,13 +627,69 @@ class _GameScreenState extends State<GameScreen> {
                   ),
                 ),
               ),
+              // Enhanced hunger bar
               Expanded(
-                  child: SizedBox(
-                width: double.infinity,
-                child: LinearProgressIndicator(
-                  value: hunger / 200,
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.restaurant,
+                                  color: Colors.orange, size: 16),
+                              SizedBox(width: 4),
+                              Text(
+                                'Hunger',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Text(
+                            '${hunger.toInt()}/200',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: hunger > 50 ? Colors.green : Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        height: 12,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.black26),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: LinearProgressIndicator(
+                            value: hunger / 200,
+                            backgroundColor: Colors.grey[300],
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              hunger > 100
+                                  ? Colors.green
+                                  : hunger > 50
+                                      ? Colors.orange
+                                      : Colors.red,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              )),
+              ),
             ],
           ),
         ),

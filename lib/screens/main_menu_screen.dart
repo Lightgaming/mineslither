@@ -30,7 +30,7 @@ class MainMenuScreen extends StatelessWidget {
                       GoRouter.of(context).go('/play');
                     },
                     style: ButtonStyle(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                         const EdgeInsets.all(20),
                       ),
                     ),
@@ -45,7 +45,7 @@ class MainMenuScreen extends StatelessWidget {
                       GoRouter.of(context).go('/tutorial');
                     },
                     style: ButtonStyle(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                         const EdgeInsets.all(20),
                       ),
                     ),
@@ -60,7 +60,7 @@ class MainMenuScreen extends StatelessWidget {
                       GoRouter.of(context).go('/settings');
                     },
                     style: ButtonStyle(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                         const EdgeInsets.all(20),
                       ),
                     ),
@@ -76,7 +76,7 @@ class MainMenuScreen extends StatelessWidget {
                       SystemNavigator.pop();
                     },
                     style: ButtonStyle(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                         const EdgeInsets.all(20),
                       ),
                     ),
@@ -93,8 +93,8 @@ class MainMenuScreen extends StatelessWidget {
               padding: const EdgeInsets.all(10),
               child: PayPalButton(
                 style: ButtonStyle(
-                  foregroundColor: MaterialStateProperty.all(Colors.white),
-                  padding: MaterialStateProperty.all(
+                  foregroundColor: WidgetStateProperty.all(Colors.white),
+                  padding: WidgetStateProperty.all(
                     const EdgeInsets.all(20),
                   ),
                 ),
